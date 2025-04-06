@@ -208,6 +208,15 @@ do
       end,
     },
   }
+  -- Change diagnostic symbols in the sign column (gutter)
+  if vim.g.have_nerd_font then
+    local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
+    local diagnostic_signs = {}
+    for type, icon in pairs(signs) do
+      diagnostic_signs[vim.diagnostic.severity[type]] = icon
+    end
+    vim.diagnostic.config { signs = { text = diagnostic_signs } }
+  end
 
   vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
@@ -534,13 +543,6 @@ do
   require('telescope').setup {
     -- You can put your default mappings / updates / etc. in here
     --  All the info you're looking for is in `:help telescope.setup()`
-    --
-    -- defaults = {
-    --   mappings = {
-    --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-    --   },
-    -- },
-    -- pickers = {}
     extensions = {
       ['ui-select'] = { require('telescope.themes').get_dropdown() },
     },
@@ -1024,7 +1026,7 @@ do
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --
   -- For independent modules, uncomment the convenience loader:
-  -- require 'custom.plugins'
+  require 'custom.plugins'
   --
   -- `custom.plugins` automatically loads files from that directory, but their
   -- order is unspecified. If plugins depend on each other, keep them in the same
