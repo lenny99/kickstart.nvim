@@ -1,5 +1,5 @@
 return {
-	'mrcjkb/haskell-tools.nvim',
-	version = '^4',
-	lazy = false
+  'mrcjkb/haskell-tools.nvim',
+  version = '^4',
+  lazy = false,
 }
