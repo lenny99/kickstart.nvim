@@ -35,7 +35,6 @@ return {
     local function start_swank()
       local project = lisp_project()
       if not project or vim.fn.executable('sbcl') ~= 1 then
-        vim.notify('Cannot start Swank: no project ASDF file or sbcl found', vim.log.levels.ERROR)
         return
       end
 
