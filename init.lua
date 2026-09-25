@@ -924,6 +924,27 @@ require('lazy').setup({
     end,
   },
 
+    { -- Transparent Catppuccin, Latte is the light flavour.
+      'catppuccin/nvim',
+      name = 'catppuccin',
+      priority = 1000, -- Make sure this loads before all the other start plugins.
+      config = function()
+        require('catppuccin').setup {
+          flavour = 'latte',
+          transparent_background = true,
+          integrations = {
+            cmp = true,
+            gitsigns = true,
+            nvimtree = true,
+            telescope = true,
+            treesitter = true,
+          },
+        }
+
+        vim.cmd.colorscheme 'catppuccin'
+      end,
+    },
+
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
