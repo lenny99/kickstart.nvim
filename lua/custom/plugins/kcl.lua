@@ -1,4 +1,1 @@
-return {
-  'kcl-lang/kcl.nvim',
-  lazy = false,
-}
+vim.pack.add { 'https://github.com/kcl-lang/kcl.nvim' }
