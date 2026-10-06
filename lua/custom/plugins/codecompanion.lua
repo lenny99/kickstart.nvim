@@ -27,17 +27,52 @@ require('codecompanion').setup {
 
 vim.cmd [[cab cc CodeCompanion]]
 
-vim.keymap.set({ 'n', 'v' }, '<C-a>', '<cmd>CodeCompanionActions<cr>', { desc = '[C]odeCompanion [A]ctions' })
-vim.keymap.set({ 'n', 'v' }, '<LocalLeader>a', '<cmd>CodeCompanionCLI<cr>', { desc = 'Toggle the [A]gent CLI' })
-vim.keymap.set({ 'n', 'v' }, '<LocalLeader>cp', function()
-  return require('codecompanion').cli { prompt = true }
-end, { desc = '[C]odeCompanion [P]rompt the agent' })
-vim.keymap.set({ 'n', 'v' }, '<LocalLeader>ca', function()
-  return require('codecompanion').cli('#{this}', { focus = false })
-end, { desc = '[C]odeCompanion [A]dd context to the agent' })
-vim.keymap.set('n', '<LocalLeader>cd', function()
-  return require('codecompanion').cli('#{diagnostics} Can you fix these?', { focus = false, submit = true })
-end, { desc = '[C]odeCompanion send [D]iagnostics to the agent' })
-vim.keymap.set('n', '<LocalLeader>ct', function()
-  return require('codecompanion').cli('#{terminal} Sharing the output from the terminal. Can you fix it?', { focus = false, submit = true })
-end, { desc = '[C]odeCompanion send [T]erminal output to the agent' })
+---Return the active CLI session, opening a new one when none exists
+---@return CodeCompanion.CLI|nil
+local function active_session()
+  local cli = require 'codecompanion.interactions.cli'
+  local instance = cli.get_visible() or cli.last_cli() or cli.create()
+  if instance and not instance.ui:is_visible() then
+    instance.ui:open()
+  end
+  return instance
+end
+
+---Return an "@relative/path:line" reference for the cursor location
+---@return string|nil
+local function cursor_reference()
+  local name = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
+  if name == '' then
+    return nil
+  end
+  local line = vim.api.nvim_win_get_cursor(0)[1]
+  return string.format('@%s:%d', vim.fn.fnamemodify(name, ':.'), line)
+end
+
+-- Start a new agent session
+vim.keymap.set({ 'n', 'v' }, '<leader>an', function()
+  require('codecompanion').cli()
+  local instance = require('codecompanion.interactions.cli').last_cli()
+  if instance then
+    instance:focus()
+  end
+end, { desc = 'CodeCompanion [A]gent [N]ew session' })
+
+-- Send the box text plus the cursor line reference to the active session
+vim.keymap.set({ 'n', 'v' }, '<leader>ap', function()
+  local reference = cursor_reference()
+  require('codecompanion.interactions.shared.input').open {
+    title = ' CodeCompanion Prompt ',
+    on_submit = function(text)
+      local instance = active_session()
+      if not instance then
+        return
+      end
+      if reference then
+        text = string.format('%s\n%s', text, reference)
+      end
+      instance:send(text, { submit = true })
+      instance:focus()
+    end,
+  }
+end, { desc = 'CodeCompanion [A]gent [P]rompt at the cursor line' })
