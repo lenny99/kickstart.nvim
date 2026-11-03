@@ -439,7 +439,14 @@ do
       treesitter = true,
     },
   }
-  vim.cmd.colorscheme 'catppuccin-frappe'
+  -- Noctalia rewrites colors/noctalia.lua from the current palette and
+  -- SIGUSR1-reloads running sessions. Catppuccin is the fallback when the
+  -- generated file has not been written yet.
+  if vim.fn.filereadable(vim.fn.stdpath 'config' .. '/colors/noctalia.lua') == 1 then
+    vim.cmd.colorscheme 'noctalia'
+  else
+    vim.cmd.colorscheme 'catppuccin-latte'
+  end
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
