@@ -11,6 +11,18 @@ end
 
 require('codecompanion').setup {
   interactions = {
+    -- Annotations were replaced by the code review interaction. Comment on
+    -- changes as you read them, then send the comments back to the agent.
+    code_review = {
+      enabled = true,
+      keymaps = {
+        close = {
+          modes = { n = 'q' },
+          callback = 'close',
+          description = 'Close the review window',
+        },
+      },
+    },
     cli = {
       agent = 'autolith',
       agents = {
@@ -49,6 +61,17 @@ local function cursor_reference()
   return string.format('@%s:%d', vim.fn.fnamemodify(name, ':.'), line)
 end
 
+---Send the pending review comments to the active agent session
+local function send_review()
+  local code_review = require 'codecompanion.interactions.code_review'
+  if #code_review.pending() == 0 then
+    vim.notify('No pending code review comments', vim.log.levels.WARN)
+    return
+  end
+
+  require('codecompanion').cli('Please action #{code_review}', { submit = true })
+end
+
 -- Start a new agent session
 vim.keymap.set({ 'n', 'v' }, '<leader>an', function()
   require('codecompanion').cli()
@@ -76,3 +99,31 @@ vim.keymap.set({ 'n', 'v' }, '<leader>ap', function()
     end,
   }
 end, { desc = 'CodeCompanion [A]gent [P]rompt at the cursor line' })
+
+-- Review the changes an agent has made, hunk by hunk
+vim.keymap.set('n', '<leader>ar', function()
+  require('codecompanion').code_review()
+end, { desc = 'CodeCompanion [A]gent [R]eview changes' })
+
+-- Review every change on the branch since it left the default branch
+vim.keymap.set('n', '<leader>aR', function()
+  require('codecompanion').code_review { subcommand = 'branch' }
+end, { desc = 'CodeCompanion [A]gent [R]eview whole branch' })
+
+-- Comment on the current line or visual selection, from any buffer
+vim.keymap.set({ 'n', 'v' }, '<leader>ac', function()
+  require('codecompanion').code_review { subcommand = 'comment' }
+end, { desc = 'CodeCompanion [A]gent review [C]omment' })
+
+-- Edit all pending review comments by hand
+vim.keymap.set('n', '<leader>aC', function()
+  require('codecompanion.interactions.code_review').edit_comments()
+end, { desc = 'CodeCompanion [A]gent review [C]omments' })
+
+-- Save comments to review.md and copy the path for agents outside CodeCompanion
+vim.keymap.set('n', '<leader>as', function()
+  require('codecompanion.interactions.code_review').share()
+end, { desc = 'CodeCompanion [A]gent [S]hare review to review.md' })
+
+-- Send pending review comments to the active agent session
+vim.keymap.set('n', '<leader>aS', send_review, { desc = 'CodeCompanion [A]gent review [S]end comments' })
