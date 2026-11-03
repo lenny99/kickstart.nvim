@@ -815,10 +815,10 @@ do
   --
   -- You can press `g?` for help in this menu.
   local ensure_installed = vim.tbl_keys(servers or {})
-  vim.list_extend(ensure_installed, {
-    -- You can add other tools here that you want Mason to install
-    'markdownlint', -- Used to lint Markdown (see kickstart/plugins/lint.lua)
-  })
+  -- You can add other tools here that you want Mason to install
+  -- Markdown linting uses rumdl, which is installed via Homebrew instead of
+  -- Mason (`brew install rumdl`), so it does not need Node/npm. See
+  -- kickstart/plugins/lint.lua.
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
