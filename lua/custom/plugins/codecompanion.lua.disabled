@@ -10,6 +10,12 @@ if vim.fn.executable(cmd) ~= 1 then
 end
 
 require('codecompanion').setup {
+  adapters = {
+    acp = {
+      -- OpenCode's built-in ACP adapter, launched via `opencode acp`
+      opencode = 'opencode',
+    },
+  },
   interactions = {
     -- Annotations were replaced by the code review interaction. Comment on
     -- changes as you read them, then send the comments back to the agent.
@@ -72,13 +78,37 @@ local function send_review()
   require('codecompanion').cli('Please action #{code_review}', { submit = true })
 end
 
--- Start a new agent session
+-- Start a new agent session, choosing between OpenCode (ACP) and Autolith (CLI)
 vim.keymap.set({ 'n', 'v' }, '<leader>an', function()
-  require('codecompanion').cli()
-  local instance = require('codecompanion.interactions.cli').last_cli()
-  if instance then
-    instance:focus()
-  end
+  local agents = {
+    {
+      description = 'OpenCode (ACP)',
+      start = function()
+        require('codecompanion').chat { params = { adapter = 'opencode' } }
+      end,
+    },
+    {
+      description = 'Autolith (CLI)',
+      start = function()
+        require('codecompanion').cli()
+        local instance = require('codecompanion.interactions.cli').last_cli()
+        if instance then
+          instance:focus()
+        end
+      end,
+    },
+  }
+
+  vim.ui.select(agents, {
+    prompt = 'Start agent session:',
+    format_item = function(agent)
+      return agent.description
+    end,
+  }, function(agent)
+    if agent then
+      agent.start()
+    end
+  end)
 end, { desc = 'CodeCompanion [A]gent [N]ew session' })
 
 -- Send the box text plus the cursor line reference to the active session
