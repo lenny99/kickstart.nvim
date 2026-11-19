@@ -13,4 +13,20 @@ require('opencode').setup {
       ['<leader>am'] = { 'configure_provider', desc = 'OpenCode select model' },
     },
   },
+  ui = {
+    output = {
+      rendering = {
+        -- opencode's built-in Markview integration runs `:Markview render <buf>`.
+        -- A user command receives its arguments as strings, but Markview's
+        -- `actions.render()` requires a numeric buffer id, so it silently
+        -- aborts. The panel then never re-renders after the initial attach and
+        -- tables (which Markview draws with virtual text) stay raw.
+        -- Call Markview's API directly with the number instead.
+        on_data_rendered = function(buf)
+          local ok, markview = pcall(require, 'markview.actions')
+          if ok and markview.render then pcall(markview.render, buf) end
+        end,
+      },
+    },
+  },
 }

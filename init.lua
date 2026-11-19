@@ -488,12 +488,64 @@ do
   require('mini.surround').setup()
 
   -- [[ Statusline ]]
-  -- A fast, customizable statusline. `theme = 'auto'` follows the active
-  -- colorscheme (Noctalia or the Catppuccin fallback).
+  -- A fast, customizable statusline. Catppuccin ships a matching lualine
+  -- theme named `catppuccin-nvim` that follows the active flavour, so use it
+  -- when the Catppuccin fallback is active.
+  -- See: https://github.com/catppuccin/nvim (lualine.nvim integration)
+  --
+  -- Noctalia deliberately strips the backgrounds of Normal/StatusLine to keep
+  -- the window chrome transparent (colors/noctalia.lua, "Transparency"), which
+  -- makes lualine's `auto` theme fall back to a solid black bar. Build a
+  -- transparent theme from Noctalia's own highlight groups instead: no
+  -- catppuccin colours here, and reading the groups at load time means the
+  -- statusline follows Noctalia's live palette reloads.
+  local function transparent_statusline_theme()
+    -- Read a colour from a live highlight group rather than hard-coding the
+    -- generated palette, so SIGUSR1 palette changes are picked up as well.
+    local function color(group, attr, fallback)
+      local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group, link = false })
+      local value = ok and hl[attr]
+      return value and string.format('#%06x', value) or fallback
+    end
+
+    local base = color('TabLineSel', 'fg', '#16161e') -- dark text on the accent
+    local surface = color('PmenuSel', 'bg', '#364364') -- solid section background
+    local text = color('Normal', 'fg', '#c0caf5')
+    local dim = color('LineNr', 'fg', '#5d6682')
+
+    local function mode(accent)
+      return {
+        a = { bg = accent, fg = base, gui = 'bold' },
+        b = { bg = surface, fg = accent },
+        c = { bg = 'NONE', fg = text },
+      }
+    end
+
+    return {
+      normal = mode(color('TabLineSel', 'bg', '#7aa2f7')),
+      insert = mode(color('SignAdd', 'fg', '#9ece6a')),
+      visual = mode(color('Function', 'fg', '#bb9af7')),
+      replace = mode(color('SignDelete', 'fg', '#f7768e')),
+      command = mode(color('SignChange', 'fg', '#e0af68')),
+      terminal = mode(color('SignAdd', 'fg', '#9ece6a')),
+      inactive = {
+        a = { bg = 'NONE', fg = dim },
+        b = { bg = 'NONE', fg = dim },
+        c = { bg = 'NONE', fg = dim },
+      },
+    }
+  end
+
   vim.pack.add { gh 'nvim-lualine/lualine.nvim' }
   require('lualine').setup {
     options = {
-      theme = 'auto',
+      -- lualine re-applies `options.theme` on every ColorScheme event, so a
+      -- function keeps the statusline in sync with both the Catppuccin
+      -- fallback and Noctalia's generated palette without a restart.
+      theme = function()
+        if (vim.g.colors_name or ''):match '^catppuccin' then return 'catppuccin-nvim' end
+        return transparent_statusline_theme()
+      end,
       icons_enabled = vim.g.have_nerd_font,
       globalstatus = true,
     },
@@ -1043,7 +1095,7 @@ do
   -- require 'kickstart.plugins.debug'
   require 'kickstart.plugins.indent_line'
   require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
+  require 'kickstart.plugins.autopairs'
   require 'kickstart.plugins.neo-tree'
   -- Gitsigns is configured in section 4 above, including its recommended keymaps.
 
